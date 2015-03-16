@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 using Memoling.Tools.WiktionaryMapper.Data;
+using Memoling.Tools.WiktionaryParser;
 using Memoling.Tools.WiktionaryParser.Data;
 using Memoling.Tools.WiktionaryParser.Section;
 using Memoling.Tools.WiktionaryParser.Tag;
-using Memoling.Tools.WiktionaryParser;
 
 namespace Memoling.Tools.WiktionaryMapper
 {
@@ -90,10 +88,10 @@ namespace Memoling.Tools.WiktionaryMapper
                     TagPattern = TagPatterns.Category
                 },
                 // Remove Quotes
-                new TagTransformation() 
+                /*new TagTransformation() 
                 {
                     TagPattern = TagPatterns.Quote
-                },
+                },*/
                 // Remove explicit references
                 new TagTransformation() 
                 {
@@ -109,7 +107,7 @@ namespace Memoling.Tools.WiktionaryMapper
                 {
                     TagPattern = TagPatterns.OrphanLine
                 },
-                // Shorten tags
+                /*// Shorten tags
                 new TagTransformation() 
                 {
                     TagPattern = TagPatterns.Tag,
@@ -117,7 +115,7 @@ namespace Memoling.Tools.WiktionaryMapper
                     {
                         return match.Value.Substring(1, match.Value.Length-2);
                     }
-                },
+                },*/
 
                 // --------------------------------------------- Cleaning
 
@@ -252,7 +250,7 @@ namespace Memoling.Tools.WiktionaryMapper
             });
         }
 
-        private IEnumerable<dynamic> EnumerationTransformation(DataProcessorContext context, string header, string content, Func<string, dynamic> instanceBuilder)
+        private IEnumerable<T> EnumerationTransformation<T>(DataProcessorContext context, string header, string content, Func<string, T> instanceBuilder)
         {
             var items = content.Split(new char[] { '*', '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
 

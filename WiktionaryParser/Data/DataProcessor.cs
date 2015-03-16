@@ -9,11 +9,11 @@ namespace Memoling.Tools.WiktionaryParser.Data
     {
         public int TopSectionLevel = 2;
 
-        DataProcessorConfig config;
+        readonly DataProcessorConfig _config;
 
         public DataProcessor(DataProcessorConfig config)
         {
-            this.config = config;
+            _config = config;
         }
 
         public DataProcessorResult Next(string title, string page)
@@ -21,7 +21,7 @@ namespace Memoling.Tools.WiktionaryParser.Data
             // Prepare page
             RemoveCategoryReferences(ref page, title);
             RemoveXmlComments(ref page);
-            DataProcessorContext context = new DataProcessorContext(config, title, page);
+            var context = new DataProcessorContext(_config, title, page);
 
             var sectionInfos = GetSectionsInfo(page).ToList();
 
@@ -38,7 +38,7 @@ namespace Memoling.Tools.WiktionaryParser.Data
             var transformedSections = TransformSections(context, sectionInfos).ToList();
             var extraSections = ExtraSections(context, sectionInfos).ToList();
 
-            return new DataProcessorResult()
+            return new DataProcessorResult
             {
                 Context = context,
                 TransformedSections = transformedSections,
@@ -53,13 +53,13 @@ namespace Memoling.Tools.WiktionaryParser.Data
 
         private void RemoveCategoryReferences(ref string page, string title)
         {
-            Regex pattern = new Regex(@"\[\[[a-z-]+:" + Regex.Escape(title) + @"\]\]");
+            var pattern = new Regex(@"\[\[[a-z-]+:" + Regex.Escape(title) + @"\]\]");
             page = page.RemoveRegexMatches(pattern);
         }
 
         private void RemoveConfigSections(ICollection<SectionInfo> sections)
         {
-            foreach (var toRemove in config.RemoveSections)
+            foreach (var toRemove in _config.RemoveSections)
             {
                 var section = sections.FirstOrDefault(s => s.Header == toRemove);
                 if (section != null)
@@ -71,14 +71,14 @@ namespace Memoling.Tools.WiktionaryParser.Data
 
         private void RemoveInvalidTopSections(ICollection<SectionInfo> sections)
         {
-            for (int i = 0; i < sections.Count;i++ )
+            for (var i = 0; i < sections.Count;i++ )
             {
                 var section = sections.ElementAt(i);
-                if (section.Level == TopSectionLevel && section.Header != config.TopLevelSection)
+                if (section.Level == TopSectionLevel && section.Header != _config.TopLevelSection)
                 {
                     // Remove all section from i
 
-                    for (int j = sections.Count-1; j >= i; j--)
+                    for (var j = sections.Count-1; j >= i; j--)
                     {
                         sections.Remove(sections.ElementAt(j));
                     }
@@ -90,19 +90,19 @@ namespace Memoling.Tools.WiktionaryParser.Data
         
         private IEnumerable<SectionInfo> GetSectionsInfo(string text)
         {
-            List<Match> matches = new List<Match>();
+            var matches = new List<Match>();
             foreach (Match match in TagPatterns.Section.Matches(text))
             {
                 matches.Add(match);
             }
 
-            for (int i = 0; i < matches.Count; i++)
+            for (var i = 0; i < matches.Count; i++)
             {
-                Match match = matches[i];
-                string value = match.ToString();
-                int level = value.Count(c => c == '=') / 2;
+                var match = matches[i];
+                var value = match.ToString();
+                var level = value.Count(c => c == '=') / 2;
 
-                int index = match.Index + match.Length;
+                var index = match.Index + match.Length;
                 int nextMatchIndex;
                 if (i < matches.Count - 1)
                 {
@@ -113,7 +113,7 @@ namespace Memoling.Tools.WiktionaryParser.Data
                     nextMatchIndex = text.Length;
                 }
 
-                yield return new SectionInfo()
+                yield return new SectionInfo
                 {
                     Header = value.Substring(level, value.Length - level * 2),
                     Level = level,
@@ -125,7 +125,9 @@ namespace Memoling.Tools.WiktionaryParser.Data
 
         private IEnumerable<Section> TransformSections(DataProcessorContext context, ICollection<SectionInfo> sectionInfos)
         {
-            foreach (var sectionTransformation in config.SectionTransformations)
+            var sections = sectionInfos.ToList();
+
+            foreach (var sectionTransformation in _config.SectionTransformations)
             {
                 foreach (var header in sectionTransformation.Headers)
                 {
@@ -140,8 +142,9 @@ namespace Memoling.Tools.WiktionaryParser.Data
                     {
                         sectionInfos.Remove(section);
                         var content = context.Page.Substring(section.ContentIndex, section.ContentLength).Trim();
-                        yield return new Section()
+                        yield return new Section
                         {
+                            Parent = GetParentSection(sections, section)?.Header,
                             Header = section.Header,
                             Content = sectionTransformation.Transformation(context, section.Header, content)
                         };
@@ -150,11 +153,25 @@ namespace Memoling.Tools.WiktionaryParser.Data
             }
         }
 
-        private IEnumerable<Section> ExtraSections(DataProcessorContext context, IEnumerable<SectionInfo> sectionInfos)
+        private SectionInfo GetParentSection(IList<SectionInfo> sections, SectionInfo section)
+        {
+            var index = sections.IndexOf(section);
+            for (var i = index - 1; i >= 0; i--)
+            {
+                var parent = sections[i];
+                if (parent.Level < section.Level)
+                {
+                    return parent;
+                }
+            }
+            return null;
+        }
+
+        private static IEnumerable<Section> ExtraSections(DataProcessorContext context, IEnumerable<SectionInfo> sectionInfos)
         {
             foreach (var section in sectionInfos)
             {
-                yield return new Section()
+                yield return new Section
                 {
                     Header = section.Header,
                     Content = context.Page.Substring(section.ContentIndex, section.ContentLength).Trim()
