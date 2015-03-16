@@ -11,11 +11,11 @@ using Memoling.Tools.WiktionaryParser.Tag;
 namespace Memoling.Tools.WiktionaryMapper
 {
     // TODO: Make more generic
-    public class DataProcessorConfigBuilder
+    public class DefaultDataProcessorConfig
     {
         public static DataProcessorConfig Build()
         {
-            return new DataProcessorConfigBuilder().config;
+            return new DefaultDataProcessorConfig().config;
         }
 
         private DataProcessorConfig config;
@@ -26,7 +26,7 @@ namespace Memoling.Tools.WiktionaryMapper
         public static string SynonymSection = "Synonyms";
         public static string AnotonymSection = "Antonyms";
 
-        private DataProcessorConfigBuilder()
+        private DefaultDataProcessorConfig()
         {
             BuildCommonTagTransformation();
 

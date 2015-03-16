@@ -65,7 +65,7 @@ namespace Memoling.Tools.WiktionaryMapper
 
         static IDataProcessor CreateDataProcessor()
         {
-            var config = DataProcessorConfigBuilder.Build();
+            var config = DefaultDataProcessorConfig.Build();
             return new DataProcessor(config);
         }
 
